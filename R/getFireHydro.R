@@ -107,8 +107,13 @@ getFireHydro <- function(EDEN_date,
     outDat
   }
   
+  ###NEED TO RUN MAIN - THIS CREATES EDEN TEST AREA
+  eden_epa<-eden_test_area
+  
+  
+  BICY_EVER_PlanningUnits_shp<-fireHydro::BICY_EVER_PlanningUnits
   planningUnits_shp <- sf::st_union(BICY_EVER_PlanningUnits_shp)
-  EDEN_date2    <- format(x = strptime(x = as.character(EDEN_date), format = "%Y%m%d"), "%d %b %Y")
+  #EDEN_date2    <- format(x = strptime(x = as.character(EDEN_date), format = "%Y%m%d"), "%d %b %Y")
   
   ### argument to auto-generate output 
   # output_shapefile <- paste0("analysis/outcomes/fireRisk_area_", EDEN_date, ".csv")
@@ -121,63 +126,79 @@ getFireHydro <- function(EDEN_date,
   ### adjust EDEN directory for operating system
   # if(!"character" %in% class(EDEN_GIS_directory)) stop("EDEN_GIS_DIRECTORY argument needs to be a character vector (e.g., an object in the working environment ('dat1'), a shapefile address ('dat1.shp'), a directory (e.g., 'Y:/gis/eden/') or the word 'detect'. )")
   
-  if ((length(EDEN_GIS_directory) == 1) && (class(EDEN_GIS_directory)[1] %in% "character") && (EDEN_GIS_directory[1] == "detect")) {
-    switch(Sys.info()[['sysname']],
-           Windows= {EDEN_GIS_directory <- "Y:/gis/eden/"},
-           Linux  = {EDEN_GIS_directory <- "/opt/physical/gis/eden/"},
-           Darwin = {stop("EDEN data parent directory address is not automatically identified for Mac OS.")})
-    eden_epa               <- sf::st_read(paste0(EDEN_GIS_directory, substr(EDEN_date, 1, 4), "/eden_epa", EDEN_date, ".shp"))
-  } else if ((length(EDEN_GIS_directory) == 1) && (class(EDEN_GIS_directory)[1] %in% "character") && (grepl(x = EDEN_GIS_directory, pattern = "shp$"))) {
-    eden_epa               <- sf::st_read(EDEN_GIS_directory)
-    # } else if (exists(EDEN_GIS_directory_main)) { # gsub(x = "a$data", pattern = "\\$.*", replacement = "")
-  } else if ("sf" %in% class(EDEN_GIS_directory)) {
-    # if ("sf" %in% class(get(EDEN_GIS_directory)) || "sf" %in% class(EDEN_GIS_directory)) { # if EDEN data are already a SIMPLE FEATURE object in workspace
-      eden_epa   <- EDEN_GIS_directory
-    #} else  if (any(unlist(sapply(X = get(EDEN_GIS_directory_main), FUN = class)) %in% "sf")) { # if EDEN data are already a SIMPLE FEATURE object in workspace
-    #   eden_epa   <- get(EDEN_GIS_directory_main)$get(gsub(x = EDEN_GIS_directory, pattern = ".*\\$", replacement = "")) # gsub(x = "a$data", pattern = ".*\\$", replacement = "")
-    # }
-  } else {
-    stop("EDEN_GIS_DIRECTORY argument appears to be invalid. It is not an sf object in current working environment")
-  }
+  # if ((length(EDEN_GIS_directory) == 1) && (class(EDEN_GIS_directory)[1] %in% "character") && (EDEN_GIS_directory[1] == "detect")) {
+  #   switch(Sys.info()[['sysname']],
+  #          Windows= {EDEN_GIS_directory <- "Y:/gis/eden/"},
+  #          Linux  = {EDEN_GIS_directory <- "/opt/physical/gis/eden/"},
+  #          Darwin = {stop("EDEN data parent directory address is not automatically identified for Mac OS.")})
+  #   eden_epa               <- sf::st_read(paste0(EDEN_GIS_directory, substr(EDEN_date, 1, 4), "/eden_epa", EDEN_date, ".shp"))
+  # } else if ((length(EDEN_GIS_directory) == 1) && (class(EDEN_GIS_directory)[1] %in% "character") && (grepl(x = EDEN_GIS_directory, pattern = "shp$"))) {
+  #   eden_epa               <- sf::st_read(EDEN_GIS_directory)
+  #   # } else if (exists(EDEN_GIS_directory_main)) { # gsub(x = "a$data", pattern = "\\$.*", replacement = "")
+  # } else if ("sf" %in% class(EDEN_GIS_directory)) {
+  #   # if ("sf" %in% class(get(EDEN_GIS_directory)) || "sf" %in% class(EDEN_GIS_directory)) { # if EDEN data are already a SIMPLE FEATURE object in workspace
+  #     eden_epa   <- EDEN_GIS_directory
+  #   #} else  if (any(unlist(sapply(X = get(EDEN_GIS_directory_main), FUN = class)) %in% "sf")) { # if EDEN data are already a SIMPLE FEATURE object in workspace
+  #   #   eden_epa   <- get(EDEN_GIS_directory_main)$get(gsub(x = EDEN_GIS_directory, pattern = ".*\\$", replacement = "")) # gsub(x = "a$data", pattern = ".*\\$", replacement = "")
+  #   # }
+  # } else {
+  #   stop("EDEN_GIS_DIRECTORY argument appears to be invalid. It is not an sf object in current working environment")
+  # }
   
-  ### Fire Spread Risk category names
-  riskNames   <- c("High", "Moderately High", "Moderate", "Moderately Low", "Low")
 
   ### use table of vegetation categories and their thresholds (above which, a pixel is no longer low risk)
   ### table names must be "veg" and "threshold"
   ### veg names must match exactly the categories in vegetation map. Can use regex commands to assign 
   ### one threshold to multiple categories (e.g., "cat1|cat2")
   ### units must be feet. 
-  vegTbl <- data.frame(veg = c("Tall Continuous Grass",
-                               "Short Continuous Grass",
-                               "Pine Forest",
-                               "Pine Savannah",
-                               "Short Sparse Grass",
-                               "Shrub",
-                               "Hammock/Tree Island|Coastal Forest",
-                               "Brazilian Pepper/HID", 
-                               "Beach dune"),
-                       threshold = c(3.6, 0, 2.6, 1.6, 0, -0.6, -0.6, -1, 2.6))
+  # vegTbl <- data.frame(veg = c("Tall Continuous Grass",
+  #                              "Short Continuous Grass",
+  #                              "Pine Forest",
+  #                              "Pine Savannah",
+  #                              "Short Sparse Grass",
+  #                              "Shrub",
+  #                              "Hammock/Tree Island|Coastal Forest",
+  #                              "Brazilian Pepper/HID", 
+  #                              "Beach dune"),
+  #                      threshold = c(3.6, 0, 2.6, 1.6, 0, -0.6, -0.6, -1, 2.6))
   
-  depthDivisions <- c(-Inf, -1, -0.6, 0, 0.6, 1.6, 2.6, 3.6, Inf) # number of columns in fire cache table
-  noDivisions    <- length(depthDivisions) - 2
-  descendingSeq  <- rev(0:noDivisions)
+  veg_fuel<-c("GR1","GR3","GR8","GS3","NB1","NB3","NB8","NB9","SH6","TL2","TL4")
+  veg_risk<-c(4,3,2,5,9,8,9,9,1,7,6)
+  vegTbl <-data.frame(veg_fuel=veg_fuel,veg_risk=veg_risk)
+  
+  
+  
+  depthDivisions <- c(-Inf, -1.1, -0.5, 0, 0.5, 1.5, 2.5, 3.5, Inf) # number of columns in fire cache table
+  noDivisions    <- length(depthDivisions) - 1
+  ascendingSeq  <- seq(1:noDivisions)
   ### WaterLevel: lower where water depth is higher. 
   ### veg map polygon is high risk where vegmap$WaterLevel > vegTbl$WaterLevel (*not* greater than or equal to)
-  vegTbl$WaterLevel    <- descendingSeq[findInterval(feetToCm(vegTbl$threshold), feetToCm(depthDivisions))]
+  #vegTbl$WaterLevel    <- descendingSeq[findInterval(feetToCm(vegTbl$threshold), feetToCm(depthDivisions))]
   
   ### this is tough to automate. Should reflect depthDivisions
-  waterLevelLabels <- c("0" = "Above Surface: >3.6 ft",         
-                        "1" = "Above Surface: 2.6-3.6 ft",   
-                        "2" = "Above Surface: 1.6-2.6 ft",    
-                        "3" = "Above Surface: 0.6-1.6 ft",    
-                        "4" = "Above Surface: 0-0.6 ft", 
-                        "5" = "Below Surface: -0.6-0 ft", 
-                        "6" = "Below Surface: -1 to -0.6 ft", 
-                        "7" = "Below Surface: < -1 ft" )
-  waterLevelColors <- c("0" = "cornflowerblue", "1" = "lightseagreen", "2" = "green4", 
-                        "3" = "yellow3",        "4" = "yellow1",       "5" = "orange",  
-                        "6" = "orangered3",     "7" = "firebrick")
+  # waterLevelLabels <- c("0" = "Above Surface: >3.6 ft",         
+  #                       "1" = "Above Surface: 2.6-3.6 ft",   
+  #                       "2" = "Above Surface: 1.6-2.6 ft",    
+  #                       "3" = "Above Surface: 0.6-1.6 ft",    
+  #                       "4" = "Above Surface: 0-0.6 ft", 
+  #                       "5" = "Below Surface: -0.6-0 ft", 
+  #                       "6" = "Below Surface: -1 to -0.6 ft", 
+  #                       "7" = "Below Surface: < -1 ft" )
+  
+  #changed this to be reverse intervals that match risk table provided by NPS
+  #water level label is actually risk level
+  waterLevelLabels <- c("8" = "Above Surface: >3.6 ft",
+                        "7" = "Above Surface: 2.6-3.5 ft",
+                        "6" = "Above Surface: 1.6-2.5 ft",
+                        "5" = "Above Surface: 0.6-1.5 ft",
+                        "4" = "Above Surface: 0.1-0.5 ft",
+                        "3" = "Below Surface: -0.6-0 ft",
+                        "2" = "Below Surface: -1 to -0.6 ft",
+                        "1" = "Below Surface: < -1 ft" )
+  
+  waterLevelColors <- c("8" = "cornflowerblue", "7" = "lightseagreen", "6" = "green4", 
+                        "5" = "yellow3",        "4" = "yellow1",       "3" = "orange",  
+                        "2" = "orangered3",     "1" = "firebrick")
   
   
   
@@ -187,8 +208,9 @@ getFireHydro <- function(EDEN_date,
   ### Read EDEN EPA hydro data                    
   # ye olde version (pre-20190222): eden_epa$WaterLevel    <- c(6, 5, 4, 3, 2, 1, 0)[findInterval(eden_epa$WaterDepth, c(-Inf, -30.48, -18.288, 0, 48.768, 91.44, 121.92, Inf))]   # Rank water depth
   # ye olde version (pre 20200731): eden_epa$WaterLevel    <- c(7, 6, 5, 4, 3, 2, 1, 0)[findInterval(eden_epa$WaterDepth, feetToCm(c(-Inf, -1, -0.6, 0, 0.6, 1.6, 2.6, 3.6, Inf)))]   # Rank water depth
-  eden_epa$WaterLevel    <- descendingSeq[findInterval(eden_epa$WaterDepth, feetToCm(depthDivisions))]   # Rank water depth
-  # ggplot() +  geom_sf(data = eden_epa, mapping = aes(fill = factor(WaterLevel)), col = NA, lwd = 0) + theme_classic()
+  #eden_epa$WaterDepth_ft <- feetToCm(eden_epa$WaterDepth)
+  eden_epa$WaterLevel    <- ascendingSeq[findInterval(eden_epa$WaterDepth, feetToCm(depthDivisions))]   # Rank water depth
+  eden_epa$WaterDepth_ft<-round(eden_epa$WaterDepth*0.0328084,3) #so i can compare the language legend to risk val
   ### h(g(f(x))) = f(x) %>%  g() %>% h() = a <- f(x); b <- g(a);   h(b)
   eden_epaGroup          <- dplyr::summarize(.data = dplyr::group_by(.data = eden_epa, WaterLevel), .groups = 'drop', 
                                              sum = sum(WaterDepth))                         # Dissovle grid to minize the file size
@@ -197,10 +219,60 @@ getFireHydro <- function(EDEN_date,
   withCallingHandlers( # takes a long time
     eden_epa_reclass <- sf::st_intersection(eden_epa_reclass, planningUnits_shp), warning = fireHydro::intersectionWarningHandler)                                 # Clip the EDEN EPA hydro using the park boundary
   ### Combine EDEN EPA hydro and fuel types
-  vegetation_reclass <- vegetation_shp[, c("Veg_Cat", "FuelType")]     
+  
+  ###NEED TO RUN MAIN - THIS CREATES EDEN TEST AREA
+  vegetation_shp<-new_veg_testarea
+  
+  veg_shp_trans       <- sf::st_transform(vegetation_shp, sf::st_crs(planningUnits_shp))
+
+  vegetation_reclass <- veg_shp_trans[, c("L9_veg")]     
+  colnames(vegetation_reclass)      <- c("Veg_Cat","geometry")
+  
+  
+  veg_reclass<-merge(vegetation_reclass,vegTbl,by.x="Veg_Cat",by.y="veg_fuel")
+  
+
   withCallingHandlers(
-    eden_epaNveg        <- sf::st_intersection(sf::st_buffer(vegetation_reclass,0), eden_epa_reclass), warning = fireHydro::intersectionWarningHandler)
-  eden_epaNveg$WF_Use <- riskNames[length(riskNames)]
+    #eden_epaNveg        <- sf::st_intersection(sf::st_buffer(veg_reclass,0), eden_epa_reclass), warning = fireHydro::intersectionWarningHandler)
+    eden_epaNveg        <- sf::st_intersection(sf::st_buffer(veg_reclass,0), eden_epa_reclass), warning = fireHydro::intersectionWarningHandler)
+
+    eden_epaNveg$water_risk<-eden_epaNveg$veg_risk
+    eden_epaNveg$rval_wat_veg<-eden_epaNveg$veg_risk*eden_epaNveg$water_risk
+    
+    #eden_epaNveg$WF_Use <- riskNames[length(riskNames)] #just assigns low risk?
+  
+  #Implenting a multiplicative approach based on: 
+  
+  # 1. Veg/Fuel Type 2. Water Level  3. ERC val
+  
+  erc_val<-15 #working ERC value, this will be an input from the get_erc_data function eventually
+  
+  eden_epaNveg$avg_ERC<-erc_val
+  #assign ERC risk val 1-5
+  erc_divisions <- c(-Inf,8, 22, 29, 33,Inf)
+  num_erc_Divisions    <- length(erc_divisions)-1
+  ascending_erc_Seq  <- rev(1:num_erc_Divisions)
+  eden_epaNveg$erc_risk_val    <- ascending_erc_Seq[findInterval(eden_epaNveg$avg_ERC, erc_divisions)]   # Rank water depth
+  
+  
+  #final calc
+  eden_epaNveg$riskNum<-eden_epaNveg$veg_risk*eden_epaNveg$water_risk*eden_epaNveg$erc_risk_val
+  
+  ### Fire Spread Risk category names
+  riskNames   <- c("High", "Moderately High", "Moderate", "Moderately Low", "Low")
+  risk_vals<-c(5,4,3,2,1)
+  
+  riskTbl <-data.frame(risk_names=riskNames,RiskLevel=risk_vals)
+  
+  
+  risk_int<- c(-Inf,15,32,60,108,Inf)
+  riskDivisions    <- length(risk_int)-1
+  riskSeq  <- rev(1:riskDivisions)
+  eden_epaNveg$RiskLevel    <- riskSeq[findInterval(eden_epaNveg$riskNum, risk_int)]   
+  
+  eden_epaNveg<-merge(eden_epaNveg,riskTbl,by="RiskLevel") 
+  
+  
   ###################
   ###################
 
@@ -215,16 +287,21 @@ getFireHydro <- function(EDEN_date,
   # ###
     
 
-  if (any(grepl(pattern = paste0(vegTbl$veg, collapse = "|"), x = unique(eden_epaNveg$Veg_Cat)))) {
-    missingCats <- paste0(unique(eden_epaNveg$Veg_Cat)[!grepl(pattern = paste0(vegTbl$veg, collapse = "|"), x = unique(eden_epaNveg$Veg_Cat))], collapse = ",")
-    message("Vegetation categories observed in vegetation map without corresponding water level threshold: ", missingCats)
-  }
-  ### use table to assign high risk values
-  for (i in 1:nrow(vegTbl)) {
-    ### counterintuitive: if "WaterLevel" variable is greater than vegTbl$WaterLevel, observed water depth is lower than threshold.
-    eden_epaNveg$WF_Use[grepl(x = eden_epaNveg$Veg_Cat, pattern = vegTbl$veg[i]) & 
-                          (eden_epaNveg$WaterLevel         > vegTbl$WaterLevel[i])] <- riskNames[1]
-  }
+  
+  ####Here is where I think I need to overhaul the logic
+   
+  # 
+  # 
+  # if (any(grepl(pattern = paste0(vegTbl$veg, collapse = "|"), x = unique(eden_epaNveg$Veg_Cat)))) {
+  #   missingCats <- paste0(unique(eden_epaNveg$Veg_Cat)[!grepl(pattern = paste0(vegTbl$veg, collapse = "|"), x = unique(eden_epaNveg$Veg_Cat))], collapse = ",")
+  #   message("Vegetation categories observed in vegetation map without corresponding water level threshold: ", missingCats)
+  # }
+  # ### use table to assign high risk values
+  # for (i in 1:nrow(vegTbl)) {
+  #   ### counterintuitive: if "WaterLevel" variable is greater than vegTbl$WaterLevel, observed water depth is lower than threshold.
+  #   eden_epaNveg$WF_Use[grepl(x = eden_epaNveg$Veg_Cat, pattern = vegTbl$veg[i]) & 
+  #                         (eden_epaNveg$WaterLevel         > vegTbl$WaterLevel[i])] <- riskNames[1]
+  # }
   
   ### approach used prior to 20200731
   # eden_epaNveg$WF_Use[grepl(x = eden_epaNveg$Veg_Cat, pattern = "Tall Continuous Grass") & 
@@ -259,7 +336,10 @@ getFireHydro <- function(EDEN_date,
   #                              ifelse(eden_epaNveg$FuelType == 4 & eden_epaNveg$WaterLevel >= 1, riskNames[1],
   #                                     ifelse(eden_epaNveg$FuelType == 3 & eden_epaNveg$WaterLevel >= 5, riskNames[1], # changed  waterLevel threshold from 4 to 5 on 20190222
   #                                            ifelse(eden_epaNveg$FuelType == 2 & eden_epaNveg$WaterLevel > 5, riskNames[1], riskNames[length(riskNames)])))) # changed  waterLevel threshold from 4 to 5 on 20190222
-  # 
+
+  
+  #not sure what this represents, ask Jill
+  #currently doesn't run because I took out $WF_Use
   eden_epaNveg$RX_Use <-ifelse(eden_epaNveg$WF_Use == riskNames[1], "High Fuel Availability", "Low Fuel Availability")
   
  ### Combine fireRisk data with planning units
@@ -286,11 +366,11 @@ getFireHydro <- function(EDEN_date,
   ###
   eden_epaNveg_planningUnits$area           <- sf::st_area(eden_epaNveg_planningUnits) * 0.000247105
   
-  
+  output_shapefile="tests\\planunts_wirisk2.shp"
   ### export as shapefile
   if (!is.null(output_shapefile)) { # nocov start
     # sf::st_write(obj = eden_epaNveg_planningUnits, output_shapefile, delete_layer = TRUE, driver="ESRI Shapefile") 
-    sf::st_write(obj = eden_epaNveg_planningUnits, dsn = output_shapefile, delete_layer = TRUE, update = FALSE, delete_dsn = TRUE)
+    sf::st_write(obj = eden_epaNveg_planningUnits, driver="ESRI Shapefile", dsn = output_shapefile, overwrite = TRUE)
     # rgdal::writeOGR(eden_epaNveg_planningUnits, output_shapefile, driver="ESRI Shapefile")
     # rgdal::writeOGR(eden_epaNveg_planningUnits, output_shapefile, driver="GPKG")
   }
@@ -299,11 +379,12 @@ getFireHydro <- function(EDEN_date,
     ### Create a summary table of fire risk area for each planning unit
     ### and export as csv
     keyVars_df       <- sf::st_set_geometry(eden_epaNveg_planningUnits, NULL)                                                # Drop geometry for summing each column for total values
-    planFMUs         <- dplyr::summarize(.data = dplyr::group_by(.data = keyVars_df, PlanningUn, FMU_Name, WF_Use), .groups = 'drop', 
-                                         area_acres = sum(area))                 # Summarize data (mean) by planning units
+   # planFMUs         <- dplyr::summarize(.data = dplyr::group_by(.data = keyVars_df, PlanningUn, FMU_Name, WF_Use), .groups = 'drop', 
+    planFMUs         <- dplyr::summarize(.data = dplyr::group_by(.data = keyVars_df, PlanningUn, FMU_Name, risk_names), .groups = 'drop', 
+                                                  area_acres = sum(area))                 # Summarize data (mean) by planning units
     is.num           <- sapply(planFMUs, is.numeric)                                                                        
     planFMUs[is.num] <- lapply(planFMUs[is.num], round, 2)
-    
+    csvExport<-"outputs\\wl_planunits2.csv"
     utils::write.csv(planFMUs, file = csvExport, row.names = FALSE)       
   }
   ### export as image
@@ -375,6 +456,7 @@ getFireHydro <- function(EDEN_date,
       # if(is.null(burnData[[1]])) {
       #   
       # }
+      burnData = list(fireHydro::fire182, fireHydro::fire192, fireHydro::fire_2020)
       withCallingHandlers(
         high17                <- sf::st_intersection(eden_epaNveg_planningUnits, burnData[[1]]), warning = fireHydro::intersectionWarningHandler)  
       high17$WF_Use         <- factor(high17$WF_Use)

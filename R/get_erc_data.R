@@ -1,16 +1,19 @@
 #after catching up with Jill, she provided the links to the ERC data to pull for Big Cypress & Everglades
 #all of the data can be accessed through an xml 
 
-
-#this function gets called in kj_getFireHydro.R to add ERC to risk eval
-#...but don't have this connected yet
-
+setwd("C:\\Users\\thebrain\\Dropbox\\LCLab\\Everglades\\firehydro_working\\fireHydro")
 
 get_mean_erc<-function(date){# "20181018" date format provided in getFireHydro.R
   
 library(xml2) #handling xmls
 library(downloader) #this was streamlined for downloading (no calling of wget/curl, just url)
 
+  
+###This doesn't work yet - trying to find a way to automatically ingest date value from main getFireHydro
+###function call - so, it gets the ERC value for that date 
+###currently, doesn't do ERC for multiple dates
+#args<-as.list( match.call() )
+#char(get_arg_from_this[[3]]$date)
   
 #get date into correct format for pulling from ERC urls
 yr<-substr(date, 3, 4)
@@ -36,15 +39,12 @@ for (i in stat_to_pull){ #go through the list of stations
 url<-paste0('https://famprod.nwcg.gov/wims/xsql/nfdrs.xsql?stn=',i,'&sig=&user=lbradshaw&type=&start=',day,"-",mnth,"-",yr,"&end=",day,"-",mnth,"-",yr,'&time=&priority=&fmodel=&sort=asc&ndays=')
 print(url)
 #download the xml file to a folder in repo and create temporary file, gets removed later in loop
-
-dest_file <-paste0("./temp/erc_",as.character(date),"stat_",i,".xml")
-
 download(url=url, 
-         destfile = dest_file,
+         destfile = "./temp/temp.xml",
          extra = getOption("--no-check-certificate"))#added for systems w/ dif. security permissions?
 
-xml_lst<-as_list(read_xml(dest_file)) #convert xml file to a list for easier access
-file.remove(dest_file) #no remove file that I have info in memory
+xml_lst<-as_list(read_xml("./temp/temp.xml")) #convert xml file to a list for easier access
+file.remove("./temp/temp.xml") #no remove file that I have info in memory
 
 erc<-as.double(unlist(xml_lst$nfdrs$row$ec)) #get the erc value
   
@@ -55,10 +55,12 @@ erc_vals<-c(erc_vals,erc)#append it list of erc values for that day
 #### EVENTUALLY might want this to be 2 different average values for BICY & EVER
 mean_erc<-mean(erc_vals) #get average value
 
-return(list(round(mean_erc),erc_vals))#return the average ERC
+return(list(round(mean_erc),erc_vals,args))#return the average ERC
 
 }
 
 
 date="20220310" #format of date to pass in 
-get_mean_erc(date) #run function
+get_arg_from_this<-get_mean_erc(date) #run function
+
+
