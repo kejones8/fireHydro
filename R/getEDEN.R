@@ -18,7 +18,6 @@
 #' 
 #' 
 #' @examples
-#' 
 #' \dontrun{
 #' ### default behavior is to return data from the most recent date
 #' a <- getEDEN(EDEN_date = Sys.Date(), returnType = 'raster')
@@ -50,7 +49,8 @@ getEDEN <- function(EDEN_date = Sys.Date(),
                 exact = FALSE, 
                 quarterly = FALSE,
                 returnType  = "sf",
-                DEM = raster::raster(system.file("extdata/edenDEM.grd", package = "fireHydro"))) {
+                #DEM = raster::raster(system.file("extdata/edenDEM.grd", package = "fireHydro"))) {
+                DEM = "inst\\extdata\\fh_extent_250m.grd") {
   
   ### handle requests for multiple dates
   ### TODO: efficient behavior: detect when dates are within a quarter and do fewer data pulls. subset/stitch
@@ -143,20 +143,40 @@ getEDEN <- function(EDEN_date = Sys.Date(),
           dataName <- gsub(x = utils::tail(unlist(strsplit(x = base_url, split = "/")), 1), pattern = ".zip", replacement = ".tif")
           dataName <- gsub(x = dataName, pattern = "_geotif", replacement = "")
           geotiff_zip <- tempfile(fileext='.zip')
+          #geotiff_zip<-"C:\\Users\\thebrain\\Downloads\\2017_q1_tiff_v3.zip"
           httr::GET(base_url, httr::write_disk(path=geotiff_zip))
           # TODO: if no file returned (file size < 100 kb), find most recent date, inform user, and use most recent date
           # 2: download and unzip zip file
           utils::unzip(zipfile = geotiff_zip, overwrite = TRUE, exdir = tempdir())
+          #dir<-paste0(getwd(),"\\tests\\geotifs")
+          #utils::unzip(zipfile = geotiff_zip, overwrite = TRUE, exdir = dir )
           # 3: load geotiff as sf, set projection
-          a <- paste0(tempdir(), "/s_", dataName) # "_v2rt.tif")
+          a <- paste0(tempdir(), "\\s_", dataName) # "_v2rt.tif")
+          #a <- paste0(dir, "/s_", EDEN_date,".tif") # "_v2rt.tif")
           a.ras  <- raster::raster(a) 
+          
+          #write out the raster here to see what we get! - for 20220310
+          
+          DEM<-raster("inst\\extdata\\dem_250_cm_bicyever.grd")
+          #DEM<-raster("inst\\extdata\\fh_extent_250m_cm_rmna.grd")
+          #DEM_m<-DEM/3.281
+          #DEM_m[DEM_m < -5] <- NA
+          #DEM_cm<-DEM_m*100
+          DEM[DEM== -999] <- NA
+          
+          
+          #writeRaster(DEM_cm,"fh_extent_250m_cm_rmna.grd")
+
+          #DEM<-raster("inst\\extdata\\edenDEM.grd")
+          crs(DEM)<-crs(a.ras)
           if (!is.null(DEM)) { # if DEM == NULL, water surface in cm NAVD88 is returned
             if (!raster::compareCRS(DEM, a.ras)) { 
               ### make sure projection matches DEM before subtracting to get water depth
               a.ras <- raster::projectRaster(from = a.ras, to = DEM) # crs=raster::crs(DEM))
             }
-            a.ras <- a.ras - (DEM * 100) # apply DEM to convert water surfaces to depths ## UNIX: "Error in .local(.Object, ...) : "
-          }
+            a.ras <- a.ras - DEM # apply DEM to convert water surfaces to depths ## UNIX: "Error in .local(.Object, ...) : "
+            #a.ras <- a.ras - DEM*100
+            }
         } else if (errorVal == 1) { 
           ### if quarterly file was used, subset it to get target date:
           ### DEM is already applied

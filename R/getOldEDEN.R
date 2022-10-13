@@ -40,8 +40,8 @@ getOldEDEN <- function(YYYYMMDD,
                        baseURL = c("https://sofia.usgs.gov/eden/data/netcdf/v2/", "https://sofia.usgs.gov/eden/data/netcdf/v3/", "https://sofia.usgs.gov/eden/data/realtime2/"),
                        urlEnding = c("v2prov", "v2prov_r2", "v2prov_r3", "v2r1", "v2r2", "v2r3",  "v2rt_nc", 
                                      "v3prov", "v3prov_r2", "v3prov_r3", "v3r1", "v3r2", "v3r3", "v3rt_nc", 
-                                     "v4prov", "v4prov_r2", "v4prov_r3", "v4r1", "v4r2", "v4r3", "v4rt_nc"), # weak - data end in many variants
-                       DEM = raster(system.file("extdata/edenDEM.grd", package = "fireHydro")),
+                                     "v4prov", "v4prov_r2", "v4prov_r3", "v4r1", "v4r2", "v4r3", "v4rt_nc", "v3"), # weak - data end in many variants
+                       DEM = raster(system.file("inst/extdata/edenDEM.grd", package = "fireHydro")),
                        quarterly = FALSE) {
   
   if (class(YYYYMMDD) == "Date") {
@@ -70,7 +70,7 @@ getOldEDEN <- function(YYYYMMDD,
   ### assemble vector of URLS and identify the working url
   url_prep  <- expand.grid(a = baseURL, b = qtr, c = "_", d = urlEnding, e = ".zip")
   temp_urls <- do.call(paste0, c(url_prep))
-    
+  
   i <- NA
   for(i in 1:length(temp_urls)) {
     success <- FALSE
@@ -78,6 +78,7 @@ getOldEDEN <- function(YYYYMMDD,
     # cat(outDat$message)
     if ("Success: (200) OK" %in% outDat$message) {
       success <- TRUE
+      print(temp_urls[i])
       break
     }
     if ((!success) && (i == length(temp_urls))) {
@@ -90,18 +91,35 @@ getOldEDEN <- function(YYYYMMDD,
 
 
   tmpDir <- tempdir() # tempdir()
+  #tmpDir<-"temp"
   temp   <- tempfile(tmpdir = tmpDir, fileext = ".zip")
-  
+  print(temp)
   utils::download.file(url = temp_url, destfile = temp)
+  #utils::unzip(zipfile = temp, exdir = tmpDir, list = TRUE)$Name
   fileName <- utils::unzip(zipfile = temp, exdir = tmpDir, list = TRUE)$Name
+  #print(fileName)
+  print(paste0(tmpDir,"\\",fileName))
+  print(file.path(tmpDir,fileName))
   ras      <- raster::brick(unzip(zipfile = temp, exdir = tmpDir))
+  #ras      <- raster::stack((file.path(tmpDir,fileName)))
+  #ras      <- raster::stack((paste0(tmpDir,"\\",fileName)))
+  print(ras)
+  print("made it here")
+  DEM<-raster("inst//extdata//dem_250_cm_bicyever.grd")
+  DEM[DEM== -999] <- NA
+  crs(DEM)<-crs(ras)
   
   if (!is.null(DEM)) { # if DEM == NULL, water surface in cm NAVD88 is returned
-    if (!raster::compareCRS(DEM, a.ras)) { 
+    #if (!raster::compareCRS(DEM, a.ras)) { 
+    print("made it to before DEM")
+  
+    #if (!raster::compareCRS(DEM, ras)) {
       ### make sure projection matches DEM before subtracting to get water depth
-      ras <- raster::projectRaster(from = ras, to = DEM) # crs=raster::crs(DEM))
+      #ras <- raster::projectRaster(from = ras, to = DEM) # crs=raster::crs(DEM))
+    DEM <- raster::projectRaster(from = DEM, to = ras)
+      print("ras projected")
     }
-  }
+  #}
   # ### make sure projection matches DEM
   # if (!raster::compareCRS(DEM, ras)) {
   #   ras      <- raster::projectRaster(from = ras, to = DEM) # crs = raster::projection(DEM))
@@ -109,11 +127,13 @@ getOldEDEN <- function(YYYYMMDD,
   
   
   if (quarterly == FALSE) {
-    ### load raster for specified date 
+    ### load raster for specified date
+    print("making target ras")
     targetRas <- ras[[which(gsub(x = names(ras), pattern = "X|-|\\.", replacement = "")  %in% YYYYMMDD)]]
     if (!is.null(DEM)) { # if DEM == NULL, water surface in cm NAVD88 is returned
-      targetRas <- targetRas - (DEM * 100) # apply DEM to convert water surfaces to depths ## UNIX: "Error in .local(.Object, ...) : "
-    }
+      #targetRas <- targetRas - (DEM * 100) # apply DEM to convert water surfaces to depths ## UNIX: "Error in .local(.Object, ...) : "
+      targetRas <- targetRas - (DEM)
+      }
     names(targetRas) <- "WaterDepth"     # to match EDEN geoTiffs and getFireHydro hard-coded variables
     
     if (returnType == "sf") {
@@ -131,13 +151,17 @@ getOldEDEN <- function(YYYYMMDD,
     #
     # names(a.sf)[names(a.sf) %in% "layer"] <- "WaterDepth"
   } else if (quarterly == TRUE) {
+    print("where it falls apart")
     rasDate <- raster::stack(file.path(tmpDir, fileName))
+    
     if (!is.null(DEM)) { # if DEM == NULL, water surface in cm NAVD88 is returned
       ### make sure projection matches DEM
+      print("what about here")
       if (!raster::compareCRS(DEM, rasDate)) {
         rasDate      <- raster::projectRaster(from = rasDate, to = DEM) # crs=raster::crs(DEM))
       }
       ### need to subtract DEM*100, convert each layer to SPDF, and sf::st_as_sf
+      print("don't wanna be here")
       rasDate  <- rasDate - (DEM*100)
     }
     
