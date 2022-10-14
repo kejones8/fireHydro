@@ -5,7 +5,7 @@ library(rmapshaper)
 
 #read in whole area veg layer
 vegetation_shp<-read_sf("data\\diss_veg_ever_bicy.shp") #original veg, now reading in extended veg
-vegetation_shp<-read_sf("data\\extended_veg.shp")
+vegetation_shp<-read_sf("data\\extended_veg2.shp")
 
 #create table that assigns risk values to fuel types
 veg_fuel<-c("GR1","GR3","GR8","GS3","NB1","NB3","NB8","NB9","SH6","TL2","TL4")
@@ -51,6 +51,32 @@ for (i in 1:length(veggies)){
   write_sf(veg_val,paste0("data\\ext_veg_simp_whole_",cat,".shp"))
   
 }
+
+#read in all extended veg files and save them as .RData for easier loading into package
+
+#get files from list that follow pattern "ext_veg_simp_whole"
+files<-list.files("data\\",pattern="ext_veg_simp_whole_*")
+files_shp<-grep("*.shp", files, value = TRUE) #getting just shapefiles just to read
+
+trim_filenames<-unique(substr(files_shp,1,22)) #already works like apply?
+
+for (i in 1:length(files_shp)){
+  shp<-read_sf(paste0("data\\",files_shp[i]))
+  save(shp,file=paste0("data\\",trim_filenames[i],".RData"))
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 ######Think the stuff below here is just a test??
 
@@ -153,21 +179,7 @@ output_shapefile=paste0("outputs\\risk_map",EDEN_date,"_newdem_erc.shp")
 
 sf::st_write(obj = out, driver="ESRI Shapefile", dsn = output_shapefile, overwrite = TRUE)
 
-#because the buffering and intersecting takes so long on one large file, doing the veg work here, first
-#such that the buffered veg types can simply be loaded, intersected, and unioned with
-#the edenepa water data
-# 
-# 
-# veg_class_list<-unique(veg_reclass$Veg_Cat)
-# 
-# for (i in 1:length(veg_class_list)){
-#   
-#   veg<-veg_class_list[i]
-#   veg_simp<-sf::st_simplify(gr1_veg,dTolerance=2,preserveTopology=TRUE)
-#   sing_veg_class<-st_buffer(veg_simp,0)
-#   sf::st_write(sing_veg_class,paste0("tests\\veg_classes\\fuel_",i,".shp"))
-#   
-# }
+
 
 
 
